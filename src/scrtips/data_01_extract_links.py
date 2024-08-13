@@ -69,8 +69,7 @@ def process_line(txt_line:str) -> list:
     return row
 
 
-def process_raw_data_links(file_path:List[str, PosixPath]) -> None:
-    filepath = Path(file_path)
+def process_raw_data_links(filepath:PosixPath) -> None:
 
     with open(filepath) as f:
         lines = [l.strip() for l in f.readlines()]
