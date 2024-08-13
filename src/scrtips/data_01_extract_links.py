@@ -70,6 +70,16 @@ def process_line(txt_line:str) -> list:
 
 
 def process_raw_data_links(filepath:PosixPath) -> None:
+    """toma un archivo html y extrae las urls y md5 de archivos zip para meterlos en un .zip
+    
+    Args
+    ==========
+    filepath (pathlib.PosixPath): path del archivo
+    
+    Returns
+    ==========
+    None
+    """
 
     with open(filepath) as f:
         lines = [l.strip() for l in f.readlines()]
