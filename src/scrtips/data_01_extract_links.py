@@ -1,13 +1,9 @@
 """Este script es para convertir el html que tienen todas las ligas y md5 en un csv"""
 import re
-import argparse
-from pathlib import Path
+from pathlib import Path, PosixPath
+from typing import List
 
 import pandas as pd
-
-parser = argparse.ArgumentParser()
-parser.add_argument('file', type=str, help='path al archivo html con los datos')
-args = parser.parse_args()
 
 
 def where_is_regex(pat:str, text:str) -> tuple:
@@ -73,24 +69,26 @@ def process_line(txt_line:str) -> list:
     return row
 
 
-filepath = Path(args.file)
+def process_raw_data_links(file_path:List[str, PosixPath]) -> None:
+    filepath = Path(file_path)
 
-with open(filepath) as f:
-    lines = [l.strip() for l in f.readlines()]
+    with open(filepath) as f:
+        lines = [l.strip() for l in f.readlines()]
 
-print(f'[INFO]>> {len(lines)} lines found')
+    print(f'[INFO]>> {len(lines)} lines found')
 
-data = {
-    "url": [],
-    "md5": []
-}
+    data = {
+        "url": [],
+        "md5": []
+    }
 
-for idx, txline in enumerate(lines):
-    try:
-        row = process_line(txline)
-        data["url"].append(row[0])
-        data['md5'].append(row[1])
-    except Exception as e:
-        print(f'[WARNING]>> en la línea {idx}: {e}')
+    for idx, txline in enumerate(lines):
+        try:
+            row = process_line(txline)
+            data["url"].append(row[0])
+            data['md5'].append(row[1])
+        except Exception as e:
+            print(f'[WARNING]>> en la línea {idx}: {e}')
 
-pd.DataFrame().from_dict(data).to_csv("all_gdelt_event_files.csv", index=False)
+    pd.DataFrame().from_dict(data).to_csv(str(filepath.parent / "all_gdelt_event_files.csv"), index=False)
+
