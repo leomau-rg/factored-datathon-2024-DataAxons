@@ -99,5 +99,6 @@ def process_raw_data_links(filepath:PosixPath) -> None:
         except Exception as e:
             print(f'[WARNING]>> en la línea {idx}: {e}')
 
-    pd.DataFrame().from_dict(data).to_csv(str(filepath.parent / "all_gdelt_event_files.csv"), index=False)
+    ouptut_filename = filepath.name.lower().replace(' ', '_')
+    pd.DataFrame().from_dict(data).to_csv(str(filepath.parent / ouptut_filename), index=False)
 
