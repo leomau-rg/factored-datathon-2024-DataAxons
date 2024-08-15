@@ -9,6 +9,17 @@ from contextlib import closing
 
 
 def process_df(df:pl.DataFrame, theme:str) -> pl.DataFrame:
+    """Procesa un dataframe filtrando por tema y acotando las columnas a algunas de interés
+    
+    Args
+    ==========
+    df (polars.DataFrame): dataframe de polars
+    theme (str): cadena para filtrar en la columna 'THEMES'
+    
+    Returns
+    ==========
+    df (polars.DataFrame): dataframe de polars"""
+
     df = df.filter(
         pl.col('THEMES').str.contains(theme)
     ).select(
@@ -23,6 +34,19 @@ def process_df(df:pl.DataFrame, theme:str) -> pl.DataFrame:
 
 
 def run(datafile:PosixPath, output_dir:PosixPath, keyword:str='HEALTH', limit:int=100) -> None:
+    """Descarga varios archivos zips de un archivo csv los lee, procesa los datos como un dataframe de polars
+    y los junta en un solo dataframe para al final guardarlos como un solo .parquet
+    
+    Args
+    ==========
+    datafile (pathlib.PosixPath): path del archivo csv que contiene las urls y los checksums de los archivos zip
+    output_dir (pathlib.PosixPath): path del directorio donde se va a guardar el parquet resultante, si no existe se crea
+    keyword (str): cadena para filtrar en la columna 'THEMES' de los csv descargados
+    limit (int): número de archivos zip para descargar
+    
+    Returns
+    ==========
+    None"""
     
     urls_df = pd.read_csv(datafile)
 
@@ -44,6 +68,8 @@ def run(datafile:PosixPath, output_dir:PosixPath, keyword:str='HEALTH', limit:in
         try:
             response = requests.get(url.strip(), stream=True, timeout=10)
             if response.status_code == 200:
+                # TODO: verificar checksum md5
+                
                 print(f'\t[INFO]>> reading zip file...')
                 with closing(response), zipfile.ZipFile(io.BytesIO(response.content)) as archive:
                     zip_files = archive.infolist()
