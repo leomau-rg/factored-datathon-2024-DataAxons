@@ -1,36 +1,10 @@
-import io
-import zipfile
-import requests
 from pathlib import PosixPath
 
-import polars as pl
 import pandas as pd
-from contextlib import closing
+from polars import read_csv
 
-
-def process_df(df:pl.DataFrame, theme:str) -> pl.DataFrame:
-    """Procesa un dataframe filtrando por tema y acotando las columnas a algunas de interés
-    
-    Args
-    ==========
-    df (polars.DataFrame): dataframe de polars
-    theme (str): cadena para filtrar en la columna 'THEMES'
-    
-    Returns
-    ==========
-    df (polars.DataFrame): dataframe de polars"""
-
-    df = df.filter(
-        pl.col('THEMES').str.contains(theme)
-    ).select(
-        pl.col("DATE"),
-        pl.col("THEMES"),
-        pl.col("LOCATIONS"),
-        pl.col("PERSONS"),
-        pl.col("ORGANIZATIONS"),
-        pl.col("SOURCEURLS")
-    )
-    return df
+from src.data.remote import download_zip
+from src.data.processing import filter_by_theme
 
 
 def run(datafile:PosixPath, output_dir:PosixPath, keyword:str='HEALTH', limit:int=100) -> None:
@@ -58,43 +32,32 @@ def run(datafile:PosixPath, output_dir:PosixPath, keyword:str='HEALTH', limit:in
     # los rows contienen los headers ['url', 'md5']
     for idx, row in urls_df.iterrows():
 
-        url = row['url']
-        md5 = row['md5']
+        url:str = row['url']
+        md5:str = row['md5']
         
         if 'MASTER' in url.upper() or 'counts' in url:
             continue
         
         print(f'[INFO]>> {str(idx).rjust(4, "0")} requesting {url}...')
         try:
-            response = requests.get(url.strip(), stream=True, timeout=10)
-            if response.status_code == 200:
-                # TODO: verificar checksum md5
-                
-                print(f'\t[INFO]>> reading zip file...')
-                with closing(response), zipfile.ZipFile(io.BytesIO(response.content)) as archive:
-                    zip_files = archive.infolist()
-                    # si hay más de un archivo solo se agarra el primero
-                    if len(zip_files) > 1:
-                        print(f'\t[WARNING]>> el zip de la url {url} tiene más de un archivo')
+            for bytes_data in download_zip(url.strip()):
+            
+                df = read_csv(bytes_data, separator='\t')
+                df = filter_by_theme(df, keyword)
 
-                    print(f'\t[INFO]>> processing...')
-                    for member in zip_files:
-                        bytes_data = archive.read(member)
-                        df = pl.read_csv(bytes_data, separator='\t')
-                        df = process_df(df, keyword)
+                if main_df is None:
+                    main_df = df
+                else:
+                    main_df = main_df.vstack(df)
+                    limit -= 1
 
-                        if main_df is None:
-                            main_df = df
-                        else:
-                            main_df = main_df.vstack(df)
-                            limit -= 1
-            else:
-                print(f'[WARNING]>> no se pudo descargar el archivo')
         except Exception as e:
             print(f"something happened!!: {e}")
+        
         if limit <= 1:
             break
         
-    print("saving everything in parket...")
-    main_df.write_parquet(output_dir / (keyword + '.parquet'))
+    output_file = output_dir / (keyword + '.parquet')
+    print(f"\t[INFO]>> saving in parket {output_file}")
+    main_df.write_parquet(output_file)
 
