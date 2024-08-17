@@ -6,7 +6,7 @@ from typing import Generator
 from contextlib import closing
 
 
-def download_zip(url:str) -> Generator[bytes]:
+def download_zip(url:str) -> Generator[bytes, None, None]:
     """Descarga un archivo .zip de una url proporcionada
     
     Args
