@@ -11,10 +11,12 @@ def multi_reader(url:str, with_headers:bool=False, method:str='p', class_name:st
     Args
     ==========
     url (str): dirección web del sitio que contiene la noticia
+    
     with_headers (bool): indica si llamar a la función requests.get()
     con alguna configuración de los headers.
-    method (str): indica si buscar mediante las etiquetas 'p' o 
-    'div'. 
+    
+    method (str): indica si buscar mediante las etiquetas 'p' o 'div'. 
+    
     class_name (str): Name of the class which contains the text of the
     news in the url. Used when method == 'div'.
 
